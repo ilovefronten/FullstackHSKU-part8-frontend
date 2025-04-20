@@ -109,6 +109,7 @@ const typeDefs = `
 
   type Author {
     name: String!
+    born: Int
     bookCount: Int!
   }
 
@@ -150,7 +151,7 @@ const resolvers = {
       })
       console.log(bookCount)
       return {
-        name: author.name,
+        ...author,
         bookCount: bookCount[author.name]
       }
     })
