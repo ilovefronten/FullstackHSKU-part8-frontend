@@ -127,6 +127,10 @@ const typeDefs = `
       published: Int!
       genres: [String!]
     ) : Book
+    editAuthor(
+      name: String!, 
+      setBornTo: Int!
+    ) : Author
   }
 `
 
@@ -160,7 +164,8 @@ const resolvers = {
     addBook: (root, args) => {
       const book = { ...args, id: uuid() }
       books = books.concat(book)
-      if (!_.includes(authors, args.author)) {
+      //! _.some() is the `_.matchesProperty` iteratee shorthand.
+      if (!_.some(authors, ['name', args.author])) {
         authors = authors.concat({
           name: args.author,
           id: uuid()
@@ -169,6 +174,24 @@ const resolvers = {
       return {
         title: book.title,
         author: book.author
+      }
+    },
+
+    editAuthor: (root, args) => {
+      console.log(args);
+      //! _.some() is the `_.matchesProperty` iteratee shorthand.
+      if (!_.some(authors, ['name', args.name])) {
+        return null
+      }
+      authors = authors.map(author =>
+        author.name === args.name
+          ? { ...author, born: args.setBornTo }
+          : author
+      )
+      console.log(authors);
+      return {
+        name: args.name,
+        born: args.setBornTo
       }
     }
   }
