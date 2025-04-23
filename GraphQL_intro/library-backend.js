@@ -173,7 +173,9 @@ const resolvers = {
       }
       return {
         title: book.title,
-        author: book.author
+        author: book.author,
+        published: book.published,
+        genres: book.genres
       }
     },
 
