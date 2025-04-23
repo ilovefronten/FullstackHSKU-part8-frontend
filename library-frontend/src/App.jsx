@@ -15,13 +15,13 @@ const App = () => {
   return (
     <Router>
       <div>
-        <Link style={padding} to="/author">authors</Link>
+        <Link style={padding} to="/">authors</Link>
         <Link style={padding} to="/books">books</Link>
         <Link style={padding} to="/add">add book</Link>
       </div>
 
       <Routes>
-        <Route path='/author' element={<Authors />}></Route>
+        <Route path='/' element={<Authors />}></Route>
         <Route path='/books' element={<Books />}></Route>
         <Route path='/add' element={<NewBook />}></Route>
       </Routes>
