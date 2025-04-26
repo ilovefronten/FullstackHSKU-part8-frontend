@@ -30,7 +30,12 @@ const Authors = () => {
           ))}
         </tbody>
       </table>
-      <EditBirthYear />
+      <EditBirthYear
+        nameList={authors.map(author => ({
+            value: author.name,
+            label: author.name
+          }))}
+        />
     </div>
   )
 }
