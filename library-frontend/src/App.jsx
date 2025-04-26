@@ -2,7 +2,6 @@ import { useState } from "react";
 import Authors from "./components/Authors";
 import Books from "./components/Books";
 import NewBook from "./components/NewBook";
-import EditBirthYear from './components/EditBirthYear';
 import {
   BrowserRouter as Router, Routes, Route, Link
 } from 'react-router-dom'
@@ -29,8 +28,6 @@ const App = () => {
         </Routes>
 
       </Router>
-      <EditBirthYear />
-
     </>
   );
 };
