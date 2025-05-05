@@ -2,6 +2,7 @@ const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
 const _ = require('lodash')
 const { v1: uuid } = require('uuid')
+const { GraphQLError } = require('graphql')
 
 const mongoose = require('mongoose')
 mongoose.set('strictQuery', false)
@@ -222,21 +223,41 @@ const resolvers = {
   },
   Mutation: {
     addBook: async (root, args) => {
-      const book = { ...args, id: uuid() }
-      books = books.concat(book)
-      const newBook = new Book({ ...args })
-      //! _.some() is the `_.matchesProperty` iteratee shorthand.
+      let authorDoc = null
+    
+      // 查找或创建作者
+      if (args.author) {
+        authorDoc = await Author.findOne({ name: args.author })
+        if (!authorDoc) {
+          try {
+            authorDoc = await new Author({ name: args.author }).save()
+          } catch (error) {
+            console.error('Failed to save new author:', error)
+            throw new GraphQLError('Author saving failed', {
+              extensions: {
+                code: 'BAD_USER_INPUT',
+                invalidArgs: args.author,
+                error
+              }
+            })
+          }
+        }
+      }
+    
+      // 创建书籍，注意 author 是引用 authorDoc 的 _id
+      const newBook = new Book({
+        title: args.title,
+        published: args.published,
+        genres: args.genres,
+        author: authorDoc ? authorDoc._id : undefined
+      })
+      
       try {
         await newBook.save()
-        if (!_.some(authors, ['name', args.author])) {
-          const newAuthor = new Author({
-            name: args.author
-          })
-          const savedAuthor = await newAuthor.save()
-          authors = authors.concat(savedAuthor)
-        }
+        // populate 让 GraphQL 能正确解析 author 字段
+        return await newBook.populate('author')
       } catch (error) {
-        throw new GraphQLError('Saving failed', {
+        throw new GraphQLError('Saving book failed', {
           extensions: {
             code: 'BAD_USER_INPUT',
             invalidArgs: args.title,
@@ -244,9 +265,8 @@ const resolvers = {
           }
         })
       }
-      return newBook
     },
-
+    
     editAuthor: (root, args) => {
       console.log(args);
       //! _.some() is the `_.matchesProperty` iteratee shorthand.
