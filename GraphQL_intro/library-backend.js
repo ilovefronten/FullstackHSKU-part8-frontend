@@ -201,7 +201,20 @@ const resolvers = {
     bookCount: async () => Book.collection.countDocuments(),
     authorCount: async () => Author.collection.countDocuments(),
     allBooks: async (root, args) => {
-      return Book.find({})
+      const filter = {}
+
+      // 先查作者的 _id
+      if (args.author) {
+        const authorObj = await Author.findOne({ name: args.author })
+        if (!authorObj) return [] // 作者不存在，直接返回空数组
+        filter.author = authorObj._id
+      }
+
+      if (args.genre) {
+        filter.genres = args.genre // 匹配 genres 数组中含此 genre 的书
+      }
+
+      return Book.find(filter).populate('author') // populate 作者数据
     },
     allAuthors: async () => {
       return Author.find({})
