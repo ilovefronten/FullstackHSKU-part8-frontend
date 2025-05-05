@@ -3,6 +3,16 @@ const { startStandaloneServer } = require('@apollo/server/standalone')
 const _ = require('lodash')
 const { v1: uuid } = require('uuid')
 
+const mongoose = require('mongoose')
+mongoose.set('strictQuery', false)
+
+const Book = require('./models/book')
+const Author = require('./models/author')
+
+require('dotenv').config()
+
+const MONGODB_URI = process.env.MONGODB_URI
+
 let authors = [
   {
     name: 'Robert Martin',
@@ -95,6 +105,57 @@ let books = [
   },
 ]
 
+const seedDatabase = async () => {
+  try {
+    await Author.deleteMany({})
+    await Book.deleteMany({})
+    console.log('Database cleared.')
+
+    // 保存所有作者
+    for (const author of authors) {
+      const { name, born } = author
+      const authorToSave = new Author({ name, born })
+      await authorToSave.save()
+      console.log('Saved author:', author.name)
+    }
+
+    // 保存所有书籍
+    for (const book of books) {
+      const { title, published, author, genres } = book
+      const authorObj = await Author.findOne({ name: author })
+
+      if (!authorObj) {
+        console.warn(`Author ${author} not found for book "${title}"`)
+        continue
+      }
+
+      const bookToSave = new Book({
+        title,
+        published,
+        author: authorObj._id, // 注意：引用 _id
+        genres
+      })
+
+      const savedBook = await bookToSave.save()
+      console.log('Saved book:', savedBook.title)
+    }
+
+    console.log('Seeding complete.')
+  } catch (err) {
+    console.error('Seeding error:', err)
+    mongoose.connection.close()
+  }
+}
+
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('connected to MongoDB')
+    seedDatabase()  // 初始化数据库
+  })
+  .catch((error) => {
+    console.log('error connection to MongoDB:', error.message)
+  })
+
 /*
   you can remove the placeholder query once your first one has been implemented 
 */
@@ -102,7 +163,7 @@ let books = [
 const typeDefs = `
   type Book {
     title: String!
-    author: String
+    author: Author!
     published: Int
     genres: [String!]
   }
@@ -137,46 +198,40 @@ const typeDefs = `
 const resolvers = {
 
   Query: {
-    bookCount: () => books.length,
-    authorCount: () => authors.length,
-    allBooks: (root, args) => {
-      if (args.author) {
-        return books.filter(book => book.author === args.author)
-      } else if (args.genre) {
-        return books.filter(book => book.genres.includes(args.genre))
-      }
-      return books
+    bookCount: async () => Book.collection.countDocuments(),
+    authorCount: async () => Author.collection.countDocuments(),
+    allBooks: async (root, args) => {
+      return Book.find({})
     },
-    allAuthors: () => authors.map(author => {
-      const bookCount = _.countBy(books, (value) => {
-        if (value.author === author.name)
-          return author.name
-        return 'other'
-      })
-      console.log(bookCount)
-      return {
-        ...author,
-        bookCount: bookCount[author.name]
-      }
-    })
+    allAuthors: async () => {
+      return Author.find({})
+    }
   },
   Mutation: {
-    addBook: (root, args) => {
+    addBook: async (root, args) => {
       const book = { ...args, id: uuid() }
       books = books.concat(book)
+      const newBook = new Book({ ...args })
       //! _.some() is the `_.matchesProperty` iteratee shorthand.
-      if (!_.some(authors, ['name', args.author])) {
-        authors = authors.concat({
-          name: args.author,
-          id: uuid()
+      try {
+        await newBook.save()
+        if (!_.some(authors, ['name', args.author])) {
+          const newAuthor = new Author({
+            name: args.author
+          })
+          const savedAuthor = await newAuthor.save()
+          authors = authors.concat(savedAuthor)
+        }
+      } catch (error) {
+        throw new GraphQLError('Saving failed', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.title,
+            error
+          }
         })
       }
-      return {
-        title: book.title,
-        author: book.author,
-        published: book.published,
-        genres: book.genres
-      }
+      return newBook
     },
 
     editAuthor: (root, args) => {
