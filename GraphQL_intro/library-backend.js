@@ -224,7 +224,7 @@ const resolvers = {
   Mutation: {
     addBook: async (root, args) => {
       let authorDoc = null
-    
+
       // 查找或创建作者
       if (args.author) {
         authorDoc = await Author.findOne({ name: args.author })
@@ -243,7 +243,7 @@ const resolvers = {
           }
         }
       }
-    
+
       // 创建书籍，注意 author 是引用 authorDoc 的 _id
       const newBook = new Book({
         title: args.title,
@@ -251,7 +251,7 @@ const resolvers = {
         genres: args.genres,
         author: authorDoc ? authorDoc._id : undefined
       })
-      
+
       try {
         await newBook.save()
         // populate 让 GraphQL 能正确解析 author 字段
@@ -266,22 +266,25 @@ const resolvers = {
         })
       }
     },
-    
-    editAuthor: (root, args) => {
+
+    editAuthor: async (root, args) => {
       console.log(args);
-      //! _.some() is the `_.matchesProperty` iteratee shorthand.
-      if (!_.some(authors, ['name', args.name])) {
+
+      const author = await Author.findOne({ name: args.name })
+      if (!author) {
         return null
       }
-      authors = authors.map(author =>
-        author.name === args.name
-          ? { ...author, born: args.setBornTo }
-          : author
-      )
-      console.log(authors);
-      return {
-        name: args.name,
-        born: args.setBornTo
+      author.born = args.setBornTo
+      try {
+        return await author.save()
+      } catch (error) {
+        throw new GraphQLError('Saving book failed', {
+          extensions: {
+            code: 'BAD_USER_INPUT',
+            invalidArgs: args.name,
+            error
+          }
+        })
       }
     }
   }
