@@ -223,6 +223,7 @@ const resolvers = {
 
   Query: {
     me: (root, args, context) => {
+      console.log(context.currentUser);
       return context.currentUser
     },
     bookCount: async () => Book.collection.countDocuments(),
@@ -291,7 +292,17 @@ const resolvers = {
       }
     },
 
-    addBook: async (root, args) => {
+    addBook: async (root, args, context) => {
+      const currentUser = context.currentUser
+
+      if (!currentUser) {
+        throw new GraphQLError('not authenticated', {
+          extensions: {
+            code: 'BAD_USER_INPUT'
+          }
+        })
+      }
+
       let authorDoc = null
 
       // 查找或创建作者
@@ -336,8 +347,16 @@ const resolvers = {
       }
     },
 
-    editAuthor: async (root, args) => {
-      console.log(args);
+    editAuthor: async (root, args, context) => {
+      const currentUser = context.currentUser
+
+      if (!currentUser) {
+        throw new GraphQLError('not authenticated', {
+          extensions: {
+            code: 'BAD_USER_INPUT'
+          }
+        })
+      }
 
       const author = await Author.findOne({ name: args.name })
       if (!author) {
