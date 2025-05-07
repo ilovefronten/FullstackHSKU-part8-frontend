@@ -245,7 +245,21 @@ const resolvers = {
       return Book.find(filter).populate('author') // populate 作者数据
     },
     allAuthors: async () => {
-      return Author.find({})
+      const authors = await Author.find({})
+      const books = await Book.find({}).populate('author')
+      
+      return authors.map(author => {
+        const bookCount = _.countBy(books, (value) => {
+          if (value.author.name === author.name)
+            return author.name
+          return 'other'
+        })
+        return {
+          name: author.name,
+          born: author.born,
+          bookCount: bookCount[author.name]
+        }
+      })
     }
   },
   Mutation: {
