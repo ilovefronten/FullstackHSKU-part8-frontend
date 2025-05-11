@@ -231,18 +231,36 @@ const resolvers = {
     allBooks: async (root, args) => {
       const filter = {}
 
-      // 先查作者的 _id
+      // 如果传了 author 参数，就先找到对应的 Author._id
       if (args.author) {
         const authorObj = await Author.findOne({ name: args.author })
-        if (!authorObj) return [] // 作者不存在，直接返回空数组
+        if (!authorObj) return []  // 作者不存在，直接返回空数组
         filter.author = authorObj._id
       }
 
+      // 如果传了 genre 参数，就按 genre 过滤
       if (args.genre) {
-        filter.genres = args.genre // 匹配 genres 数组中含此 genre 的书
+        filter.genres = args.genre
       }
 
-      return Book.find(filter).populate('author') // populate 作者数据
+      // 1. 查出所有符合 filter 的书，并 populate 作者
+      const books = await Book.find(filter).populate('author')
+
+      // 2. 统计每个作者的书籍数量
+      //    这里直接在内存中统计，也可以用 aggregate，更高效：
+      const countMap = {}
+      books.forEach(b => {
+        const id = b.author._id.toString()
+        countMap[id] = (countMap[id] || 0) + 1
+      })
+
+      // 3. 把 bookCount 注入到每本书的 author 对象里
+      return books.map(b => {
+        // b.toObject() 可以把 mongoose document 转成普通 JS 对象
+        const bookObj = b.toObject()
+        bookObj.author.bookCount = countMap[b.author._id.toString()] || 0
+        return bookObj
+      })
     },
     allAuthors: async () => {
       const authors = await Author.find({})
