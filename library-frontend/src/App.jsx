@@ -2,6 +2,7 @@ import { useState } from "react";
 import Authors from "./components/Authors";
 import Books from "./components/Books";
 import NewBook from "./components/NewBook";
+import Recommendation from "./components/Recommendation"
 import {
   BrowserRouter as Router, Routes, Route, Link, useNavigate
 } from 'react-router-dom'
@@ -37,6 +38,7 @@ const App = () => {
             ? (
               <>
                 <button><Link style={padding} to="/add">add book</Link></button>
+                <button><Link style={padding} to={"/recommend"}>recommend</Link></button>
                 <button onClick={logout}>log out</button>
               </>
             )
@@ -52,6 +54,7 @@ const App = () => {
         <Route path='/' element={<Authors />}></Route>
         <Route path='/books' element={<Books />}></Route>
         <Route path='/add' element={<NewBook />}></Route>
+        <Route path='/recommend' element={<Recommendation />}></Route>
         <Route path='/login' element={<LoginForm setToken={setToken} navigate={navigate} />}></Route>
       </Routes>
     </>
