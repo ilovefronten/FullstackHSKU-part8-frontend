@@ -23,6 +23,9 @@ const LoginForm = ({ setToken, navigate }) => {
   const loginHandler = async (event) => {
     event.preventDefault()
 
+    // 在登录前清除可能存在的令牌
+    localStorage.removeItem('user-token');
+
     const res = await login({ variables: { username, password } })
     if (res.data) {
       navigate('/')
