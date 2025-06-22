@@ -24,6 +24,9 @@ const express = require('express')
 const cors = require('cors')
 const http = require('http')
 
+const { WebSocketServer } = require('ws')
+const { useServer } = require('graphql-ws/use/ws')
+
 let authors = [
   {
     name: 'Robert Martin',
@@ -179,9 +182,28 @@ const startMyServer = async () => {
   const app = express()
   const httpServer = http.createServer(app)
 
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/',
+  })
+
+  const schema = makeExecutableSchema({ typeDefs, resolvers })  
+  const serverCleanup = useServer({ schema }, wsServer)
+
   const server = new ApolloServer({
-    schema: makeExecutableSchema({ typeDefs, resolvers }),
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    schema,
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await serverCleanup.dispose()
+            }
+          }
+        }
+      }
+    ],
   })
 
   await server.start()
@@ -195,7 +217,7 @@ const startMyServer = async () => {
         const auth = req ? req.headers.authorization : null
         if (auth && auth.startsWith('Bearer ')) {
           const decodedToken = jwt.verify(
-            auth.substring(7), 
+            auth.substring(7),
             process.env.JWT_SECRET
           )
           const currentUser = await User.findById(decodedToken.id)
