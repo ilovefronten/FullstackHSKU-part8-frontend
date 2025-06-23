@@ -5,6 +5,9 @@ const Book = require('./models/book')
 const User = require('./models/user')
 const _ = require('lodash')
 
+const { PubSub } = require('graphql-subscriptions')
+const pubsub = new PubSub()
+
 const resolvers = {
 
   Query: {
@@ -51,7 +54,7 @@ const resolvers = {
     allAuthors: async () => {
       const authors = await Author.find({})
       const books = await Book.find({}).populate('author')
-      
+
       return authors.map(author => {
         const bookCount = _.countBy(books, (value) => {
           if (value.author.name === author.name)
@@ -152,8 +155,21 @@ const resolvers = {
 
       try {
         await newBook.save()
+
         // populate 让 GraphQL 能正确解析 author 字段
-        return await newBook.populate('author')
+        const bookAdded = await newBook.populate('author')
+        console.log(bookAdded)
+        // 注册并保存所有执行subscription的clients  
+
+        // 给所有subscriber客户端发送notification
+        pubsub.publish('BOOK_ADDED', { bookAdded: bookAdded })
+        /* 
+          The iterator name is an arbitrary string, but to follow the convention, 
+          it is the subscription name written in capital letters. 
+          e.g 'BOOK_ADDED'
+        */
+
+        return bookAdded
       } catch (error) {
         throw new GraphQLError('Saving book failed', {
           extensions: {
@@ -192,6 +208,13 @@ const resolvers = {
           }
         })
       }
+    }
+  },
+  Subscription: {
+    bookAdded: {
+      // The clients are saved to an "iterator object" called BOOK_ADDED 
+      // thanks to the following code
+      subscribe: () => pubsub.asyncIterableIterator('BOOK_ADDED')
     }
   }
 

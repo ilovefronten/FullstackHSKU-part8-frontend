@@ -30,6 +30,8 @@ const typeDefs = `
     me: User
   }
 
+
+
   type Mutation {
     createUser(
       username: String!
@@ -50,6 +52,12 @@ const typeDefs = `
       setBornTo: Int!
     ) : Author
   }
+
+
+
+  type Subscription {
+    bookAdded: Book!
+  }    
 `
 
 module.exports = typeDefs
