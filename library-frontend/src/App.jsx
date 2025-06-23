@@ -32,8 +32,9 @@ const App = () => {
 
   // 设置subscribe
   useSubscription(BOOK_ADDED, {
-    onData: ({ data }) => {
-      console.log(data)
+    onData: ({ data, client }) => {
+      const addedBook = data.data.bookAdded
+      alert(`A new book ${addedBook.title} is added!`)
     }
   })
 
