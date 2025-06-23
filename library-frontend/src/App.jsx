@@ -8,6 +8,8 @@ import {
 } from 'react-router-dom'
 import LoginForm from './components/LoginForm';
 import { useApolloClient } from '@apollo/client';
+import { useSubscription } from '@apollo/client'
+import { BOOK_ADDED } from './queries'
 
 const App = () => {
 
@@ -27,6 +29,13 @@ const App = () => {
     client.resetStore()
     navigate('/login')
   }
+
+  // 设置subscribe
+  useSubscription(BOOK_ADDED, {
+    onData: ({ data }) => {
+      console.log(data)
+    }
+  })
 
   return (
     <>
