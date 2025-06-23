@@ -14,11 +14,11 @@ const Books = (props) => {
         const addedBook = data.data.bookAdded
         alert(`A new book ${addedBook.title} is added!`)
         // 更新cache
-        /* client.cache.updateQuery({ query: ALL_BOOKS }, ({ allPersons }) => {        
+        client.cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {        
           return {          
-            allPersons: allPersons.concat(addedPerson),        
+            allBooks: allBooks.concat(addedBook),        
           }      
-        }) */
+        })
       }
     })
 
