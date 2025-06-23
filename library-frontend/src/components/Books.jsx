@@ -1,5 +1,5 @@
-import { useQuery } from '@apollo/client'
-import { ALL_BOOKS } from '../queries'
+import { useQuery, useSubscription } from '@apollo/client'
+import { ALL_BOOKS, BOOK_ADDED } from '../queries'
 import { useState } from 'react'
 
 const Books = (props) => {
@@ -7,6 +7,20 @@ const Books = (props) => {
   const [filter, setFilter] = useState('')
 
   const result = useQuery(ALL_BOOKS)
+
+    // 设置subscribe
+    useSubscription(BOOK_ADDED, {
+      onData: ({ data, client }) => {
+        const addedBook = data.data.bookAdded
+        alert(`A new book ${addedBook.title} is added!`)
+        // 更新cache
+        /* client.cache.updateQuery({ query: ALL_BOOKS }, ({ allPersons }) => {        
+          return {          
+            allPersons: allPersons.concat(addedPerson),        
+          }      
+        }) */
+      }
+    })
 
   if (result.loading) {
     return <div>loading...</div>
