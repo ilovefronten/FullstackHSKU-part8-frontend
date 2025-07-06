@@ -29,7 +29,7 @@ const resolvers = {
 
       // 如果传了 genre 参数，就按 genre 过滤
       if (args.genre) {
-        filter.genres = args.genre
+        filter.genres = { $in: args.genre }
       }
 
       // 1. 查出所有符合 filter 的书，并 populate 作者

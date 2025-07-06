@@ -6,23 +6,25 @@ const Books = (props) => {
 
   const [filter, setFilter] = useState('')
 
-  const result = useQuery(ALL_BOOKS)
+  const result = useQuery(ALL_BOOKS, {
+    variables: filter ? { genre: [filter] } : {}
+  })
 
-    // 设置subscribe
-    useSubscription(BOOK_ADDED, {
-      onData: ({ data, client }) => {
-        const addedBook = data.data.bookAdded
-        alert(`A new book ${addedBook.title} is added!`)
-        // 更新cache
-        client.cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {        
-          return {          
-            allBooks: allBooks.concat(addedBook),        
-          }      
-        })
-      }
-    })
+  // 设置subscribe
+  useSubscription(BOOK_ADDED, {
+    onData: ({ data, client }) => {
+      const addedBook = data.data.bookAdded
+      alert(`A new book ${addedBook.title} is added!`)
+      // 更新cache
+      client.cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {
+        return {
+          allBooks: allBooks.concat(addedBook),
+        }
+      })
+    }
+  })
 
-  if (result.loading) {
+  if (result.loading || !result.data) {
     return <div>loading...</div>
   }
 
@@ -62,7 +64,7 @@ const Books = (props) => {
             <th>author</th>
             <th>published</th>
           </tr>
-          {booksToDisplay.map((a) => (
+          {books.map((a) => (
             <tr key={a.title}>
               <td>{a.title}</td>
               <td>{a.author.name}</td>
@@ -73,17 +75,22 @@ const Books = (props) => {
       </table>
       <br />
       <div>
-        <button onClick={() => setFilter('')}>clear genre</button>
-        {genreList.map(genre => {
-          return (
-            <button
-              key={genre}
-              onClick={({ target }) => setFilter(target.textContent)}
-            >
-              {genre}
-            </button>
-          )
-        })}
+        {
+          filter 
+            ? (<button onClick={() => setFilter('')}>clear genre</button>) 
+            : (
+              genreList.map(genre => {
+                return (
+                  <button
+                    key={genre}
+                    onClick={({ target }) => setFilter(target.textContent)}
+                  >
+                    {genre}
+                  </button>
+                )
+              })
+            )
+        }
 
       </div>
 
